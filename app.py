@@ -3,7 +3,15 @@ import datetime
 import time
 from fpdf import FPDF
 
-# --- 1. ASTROLOGY DATA ENGINE ---
+# --- 1. CONFIGURATION & ASSETS ---
+# Dictionary for Zodiac Symbols (Glyphs)
+ZODIAC_SYMBOLS = {
+    "Aries": "♈", "Taurus": "♉", "Gemini": "♊", "Cancer": "♋",
+    "Leo": "♌", "Virgo": "♍", "Libra": "♎", "Scorpio": "♏",
+    "Sagittarius": "♐", "Capricorn": "♑", "Aquarius": "♒", "Pisces": "♓"
+}
+
+# --- 2. ASTROLOGY DATA ENGINE ---
 ASTRO_DATA = {
     "Aries": {
         "Personality": "You are a pioneer and a trailblazer. Your energy is infectious, and you rarely back down from a challenge. You value honesty and directness above all else.",
@@ -79,7 +87,7 @@ ASTRO_DATA = {
     }
 }
 
-# --- 2. LOGIC FUNCTIONS ---
+# --- 3. LOGIC FUNCTIONS ---
 def get_zodiac_sign(day, month):
     if (month == 12 and day >= 22) or (month == 1 and day <= 19): return "Capricorn"
     elif (month == 1 and day >= 20) or (month == 2 and day <= 18): return "Aquarius"
@@ -95,7 +103,7 @@ def get_zodiac_sign(day, month):
     elif (month == 11 and day >= 22) or (month == 12 and day <= 21): return "Sagittarius"
     return "Unknown"
 
-# --- 3. PDF GENERATION FUNCTION ---
+# --- 4. PDF GENERATION FUNCTION ---
 def create_pdf(name, sign, data):
     class PDF(FPDF):
         def header(self):
@@ -133,31 +141,83 @@ def create_pdf(name, sign, data):
         pdf.multi_cell(0, 7, text_content)
         pdf.ln(5)
         
-    # Return PDF as a string to be downloaded
     return pdf.output(dest='S').encode('latin-1')
 
-# --- 4. THE APP INTERFACE ---
+# --- 5. THE APP INTERFACE ---
 def main():
     st.set_page_config(page_title="Starlight Oracle", page_icon="🌙", layout="wide")
 
+    # --- COSMIC STYLING (CSS) ---
+    # This block injects CSS to create the starry background and style the text
     st.markdown("""
     <style>
-    .main-header {font-size: 3em; color: #6C63FF; text-align: center; margin-bottom: 0;}
-    .sub-header {font-size: 1.2em; color: #555; text-align: center; margin-bottom: 2em;}
+    /* Main Background Image */
+    .stApp {
+        background-image: url("https://images.unsplash.com/photo-1534796636912-3b95b3ab5980?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=3600");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+    
+    /* Content Box Styling - Semi-transparent white */
+    .block-container {
+        background-color: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 3rem !important;
+        margin-top: 2rem;
+    }
+
+    /* Header Text Styling */
+    h1, h2, h3 {
+        color: #2E004F !important; /* Deep Purple */
+    }
+    
+    .main-header {
+        font-size: 3.5em; 
+        color: #4B0082; 
+        text-align: center; 
+        font-weight: bold;
+        text-shadow: 2px 2px 4px #ccc;
+    }
+    
+    .sub-header {
+        font-size: 1.4em; 
+        color: #555; 
+        text-align: center; 
+        margin-bottom: 2em;
+        font-style: italic;
+    }
+    
+    /* Button Styling */
+    .stButton>button {
+        background-color: #4B0082;
+        color: white;
+        border-radius: 20px;
+        border: none;
+        padding: 10px 24px;
+        font-weight: bold;
+    }
+    .stButton>button:hover {
+        background-color: #6A0DAD;
+        color: white;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<p class="main-header">🌙 Starlight Oracle</p>', unsafe_allow_html=True)
+    # --- APP CONTENT ---
+    st.markdown('<p class="main-header">✨ Starlight Oracle</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Discover your cosmic blueprint and future path.</p>', unsafe_allow_html=True)
 
     with st.sidebar:
         st.header("Enter Your Details")
+        st.write("The stars are ready to speak...")
         name = st.text_input("First Name")
         dob = st.date_input("Date of Birth", min_value=datetime.date(1940, 1, 1))
         generate_btn = st.button("Generate Detailed Report ✨")
 
     if generate_btn and name:
         sign = get_zodiac_sign(dob.day, dob.month)
+        symbol = ZODIAC_SYMBOLS.get(sign, "")
         
         # Progress Bar Animation
         progress_text = "Consulting the stars..."
@@ -169,7 +229,11 @@ def main():
 
         report = ASTRO_DATA.get(sign, {})
 
-        st.success(f"Report Generated for {name} | Sun Sign: {sign}")
+        # --- DISPLAY RESULTS WITH SYMBOLS ---
+        st.markdown(f"<h2 style='text-align: center; color: #4B0082;'>Hello, {name}</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align: center; font-size: 80px;'>{symbol}</h1>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='text-align: center;'>Your Sun Sign is {sign}</h3>", unsafe_allow_html=True)
+        st.write("---")
 
         tab1, tab2, tab3, tab4 = st.tabs(["🦁 Personality", "💼 Career", "💚 Health", "🔮 Future (1 Year)"])
 
@@ -194,7 +258,6 @@ def main():
         st.write("---")
         st.subheader("📥 Keep Your Reading")
         
-        # Create the PDF file in memory
         pdf_bytes = create_pdf(name, sign, report)
         
         st.download_button(
